@@ -165,8 +165,5 @@ while True:
         print("*****************************************************")
     else:
         choose = input("Type '1' for encryption and '2' for decrytion: ")
-        
-    
-    
-# make an environtment where i can enter and do as many encruption/decryption
-# as i want so that the seed remains the same, until i exit
+      
+      
