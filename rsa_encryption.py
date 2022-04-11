@@ -98,31 +98,40 @@ print("WELCOME TO THE RSA PUBLIC-KEY ENCRYPTION SCHEME")
 print("*****************************************************")
 
 
+# REMEMBER, M < n
+
 import random 
 #random.seed(random.randint(0, 1000))
 random.seed(1)
 
 # initialise primes
-# minPrime = 0
-# maxPrime = 1000
-# primes = [i for i in range(minPrime, maxPrime) if isPrime(i)]
-# p = random.choice(primes)
-# q = random.choice(primes)
+minPrime = 100
+maxPrime = 1000
+primes = [i for i in range(minPrime, maxPrime) if isPrime(i)]
+p = random.choice(primes)
+q = random.choice(primes)
 
-# test values
-p = 5
-q = 11
-e = 3
+while q == p:
+    q = random.choice(primes)
+
+# p = 90266948430929817462484794307666194174615791443937
+# q = 71387187911693596343080251710324058883276844736583
+# e = 957359621203005973262950869579717455695587573453102344121731
+# M = 3141592653
+
+# p = 5
+# q = 11
+# e = 3
 
 n = p * q
 r = (p - 1) * (q - 1)
 
-# def generate_e():
-#     e = random.randint(0, r)
-#     while gcd(e, r) != 1:
-#         e = random.randint(0, r)
-#     return e
-# e = generate_e()
+def generate_e():
+    e = random.randint(0, r)
+    while gcd(e, r) != 1: 
+        e = random.randint(0, r)
+    return e
+e = generate_e()
 
 
 # Solve the congruence: e * d = 1 (mod r), 1 < d < r
@@ -155,15 +164,23 @@ while True:
     
     if choose == '1':
         print("*****************************************************")
-        print('CODED MESSAGE:', str(M_coded))
-        print("ENCRYPTED MESSAGE:", encrypt(int(M_coded), e, n))
+        print("n =",n)
+        print('CODED MESSAGE (M):', str(M_coded))
+        print("ENCRYPTED MESSAGE (C):", encrypt(int(M_coded), e, n))
         print("*****************************************************")
     elif choose == '2':
         print("*****************************************************")
-        print("DECRYPTED MESSAGE:", decrypt(int(M), d, n))
+        print("n = ",n)
+        print("r = ",r)
+        print("d = ",d)
+        print("DECRYPTED MESSAGE (R):", decrypt(int(M), d, n))
         print('DEDCODED MESSAGE:', decode(str(decrypt(int(M), d, n))))
         print("*****************************************************")
     else:
         choose = input("Type '1' for encryption and '2' for decrytion: ")
-      
-      
+        
+        
+# to do: 
+        
+# solve congruences efficiently
+# handle M > n (or find a way around it)
