@@ -4,183 +4,222 @@ RSA PUBLIC-KEY ENCRYPTION SCHEME
 BY: ALEXANDER A. IVANOV
 '''
 
-# Checks if prime
-def isPrime(x):
-    for n in range(2, int(x ** 0.5) + 1):
-        if x % n == 0:
-            return False
-        return True
 
-# Euclidean Algorithm
 def gcd(a, b):
+    """
+    Euclidean Algorithm
+    """
     while b != 0:
         (a, b) = (b, a % b)
     return a
 
-# Extended Euclidean Algorithm
-def eea(a, b): # solve for x and y: ax + by = gcd(a, b)
-    # Base Case 
+def eea(a, b):
+    """
+    Extended Euclidean Algorithm. 
+    Solve for integers x and y:
+    ax + by = gcd(a, b)
+    """
     if a == 0 :  
         return b, 0, 1
-             
-    gcd, x1, y1 = eea(b % a, a) 
-     
-    # Update x and y using results of recursive 
-    # call 
-    x = y1 - (b//a) * x1 
-    y = x1 
-    
-    return gcd, x, y
+    else:
+        gcd, x, y = eea(b % a, a)
+        return gcd, y - (b // a) * x, x
 
-# Solve linear congruence
-def lin_congru(a, b, m):
-    if b == 0:
-        return 0
+def bin_exp(x, n, m): 
+    """
+    Compute x^n under 
+    modulo m using binary 
+    exponentiation, assuming that
+    m > x (such that x % m = x).
+    """
+    if n == 1: 
+        return x 
+    elif n % 2 == 0: 
+        return (bin_exp(x, n/2, m) ** 2) % m
+    else: 
+        return ((bin_exp(x, (n - 1) / 2, m) ** 2) * x) % m
 
-    if a < 0:
-        a = -a
-        b = -b
+import random
 
-    b %= m
-    while a > m:
-        a -= m
+def getPrime(n):
+    """
+    Generate n-bit prime.
+    """
+    random.seed(random.randint(0, 1000))
 
-    return (m * lin_congru(m, -b, a) + b) // a
+    def primeSieve(n):
+        """
+        Generate a list of primes
+        less than or equal to n.
+        """
+        isPrime = [True for i in range(n + 1)]
+        p = 2
+        while n >= p * p:
+            if isPrime[p] == True:
+                for i in range(p * p, n + 1, p):
+                    isPrime[i] = False
+            p += 1
 
+        primes = []
+        for p in range(2, n + 1):
+            if isPrime[p]:
+                primes.append(p)
+                
+        return primes
 
-# Coding table
+    def getLowLevelPrime(n):
+        '''
+        Generate a number divisible
+        by all elements in prime list.
+        '''
+        while True:
+            num = random.randrange(2 ** (n - 1) + 1, 2 ** n - 1)
 
-import pandas as pd
+            for prime in primeSieve(350):
+                if num % prime == 0 and prime ** 2 <= num:
+                    break
+                else:
+                    return num
 
-def split(message):
-    return [char for char in message]
-   
-encryptionkey = pd.read_csv(r"C:\Users\alexa\OneDrive\Desktop\encryptionkey.csv",
-                            sep=',', names=['Character', 'Byte'], header=None, skiprows=[0]) 
-df = pd.DataFrame(data=encryptionkey)
-df['Character'] = df['Character'].astype(str)
-df['Byte'] = df['Byte'].astype(str)
+    def isProbPrime(num, k):
+        '''
+        Miller-Rabin primality test on
+        number num for k trials.
+        '''
 
+        # Find s such that num - 1 = 2^s * q, q odd
+        d = num - 1
+        s = 0
+        while d % 2 == 0:
+            d >>= 1 # d/= 2
+            s += 1
+        d = num - 1
+        q = d // (2 ** s)
 
-# Coding message
+        def MRtrial(num):
+            """
+            Perform one trial of
+            Miller-Rabin test.
+            """
 
-def generate_coded_message(message_split):
-    coded_message = ""
-    
-    for i in range(len(message_split)):
-        j = message_split[i]
-        try:
-            coded_char = encryptionkey.loc[encryptionkey['Character'] == j, 'Byte'].iloc[0]
-            # To handle if character is not in our decryption list
-        except:
-            print('unrecognized character')
-            coded_char = '@@@'
-            
-        coded_message = coded_message + str(coded_char)
-    return coded_message
+            # Pick test value
+            a = random.randrange(1, num)
 
-# Decoding message
+            # Fermat Test
+            if pow(a, d, num) != 1:
+                return False
 
-def decode(message):
-        new_word = ''
-        decoded_message = []
-        for i in range(0, len(message), 2):
-            j = message[i:i + 2]
-            index_nb = df[df.eq(j).any(1)]
-            df2 = index_nb['Character'].tolist()
-            s = [str(x) for x in df2]
-            decoded_message = decoded_message + s
-        new_word = ''.join(decoded_message)
-        return new_word
+            # Check if a^2 = 1 % n has solutions +/- 1
+            if pow(a, q, num) == 1:
+                return True
+            else:
+                for i in range(s):
+                    if pow(a, (2 ** i) * q, num) == -1:
+                        return True
+                    else:
+                        return False
 
+        # Iterate for number of trials
+        for i in range(k):
+            if not MRtrial(num):
+                return False
+            else:
+                return True
 
-print("WELCOME TO THE RSA PUBLIC-KEY ENCRYPTION SCHEME")
-print("*****************************************************")
+    # Get probable prime   
+    if __name__ == '__main__':
+    	while True:
+         pc = getLowLevelPrime(n) # store the prime candidate
+         if not isProbPrime(pc, 20):
+             continue
+         else:
+             return pc
+             break
 
-
-# REMEMBER, M < n
-
-import random 
-#random.seed(random.randint(0, 1000))
-random.seed(1)
-
-# initialise primes
-minPrime = 100
-maxPrime = 1000
-primes = [i for i in range(minPrime, maxPrime) if isPrime(i)]
-p = random.choice(primes)
-q = random.choice(primes)
+p = getPrime(1024)
+q = getPrime(1024)
 
 while q == p:
-    q = random.choice(primes)
-
-# p = 90266948430929817462484794307666194174615791443937
-# q = 71387187911693596343080251710324058883276844736583
-# e = 957359621203005973262950869579717455695587573453102344121731
-# M = 3141592653
-
-# p = 5
-# q = 11
-# e = 3
+    q = getPrime(1024)
 
 n = p * q
 r = (p - 1) * (q - 1)
 
 def generate_e():
     e = random.randint(0, r)
-    while gcd(e, r) != 1: 
+    while gcd(e, r) != 1:  
         e = random.randint(0, r)
     return e
 e = generate_e()
 
-
-# Solve the congruence: e * d = 1 (mod r), 1 < d < r
-# by considering the Linear Diophantine Equation: r * x + e * d = 1
+##### Solve the congruence: e * d = 1 (mod r), 1 < d < r
+# by considering the Linear Diophantine Equation: 
+# r * x + e * d = 1 ######
 
 # Apply Extended Euclidean Algorithm:
 d = eea(r, e)[2]
 
-# satisfy the inequality:   
+# Enforce the inequality:   
 if d <= 0:
     while not 1 < d:
-        d = d + r
+        d += r
 else:
     while not d < r:
-        d = d - r
+        d -= r
+
 
 def encrypt(M, e, n):
-    return lin_congru(1, M ** e, n)
+    """
+    Convert each letter in plaintext to numerical digits
+    and encyrpt using public key.
+    """
+    return [bin_exp(ord(char), e, n) for char in M]
+
 
 def decrypt(C, d, n):
-    return lin_congru(1, C ** d, n)
+    """
+    Decrypt ciphertext using private key 
+    and convert to plaintext.
+    """
+    split_C = [C[i:i+2] for i in range(0, len(C), 2)]
+    # print(split_C)
+    #for i in split_C:
+        # print(i)
+    return ''.join([chr(bin_exp(int(i), d, n)) for i in split_C])
 
 
-while True:
-    M = input("Enter your message: ")
-    print("*****************************************************")
-    M_coded = generate_coded_message(split(M))
-    coded_message_str = str(M_coded)
-    choose = input("Type '1' for encryption and '2' for decrytion: ")
+
+if __name__ == '__main__':
+    '''
+    Check if script is the main program.
+    '''
     
-    if choose == '1':
-        print("*****************************************************")
-        print("n =",n)
-        print('CODED MESSAGE (M):', str(M_coded))
-        print("ENCRYPTED MESSAGE (C):", encrypt(int(M_coded), e, n))
-        print("*****************************************************")
-    elif choose == '2':
-        print("*****************************************************")
-        print("n = ",n)
-        print("r = ",r)
-        print("d = ",d)
-        print("DECRYPTED MESSAGE (R):", decrypt(int(M), d, n))
-        print('DEDCODED MESSAGE:', decode(str(decrypt(int(M), d, n))))
-        print("*****************************************************")
-    else:
+    print("*****************************************************")
+    print("WELCOME TO THE RSA PUBLIC-KEY ENCRYPTION SCHEME")
+    print("*****************************************************")
+    
+    while True:
+        M = input("Enter your message: ")
         choose = input("Type '1' for encryption and '2' for decrytion: ")
         
-        
+        if choose == '1':
+            print("*****************************************************")
+            print("n =",n)
+            print("ENCRYPTED MESSAGE:", 
+                  ''.join(map(lambda x: str(x), encrypt(M, e, n))))
+            print("*****************************************************")
+            
+        elif choose == '2':
+            print("*****************************************************")
+            print("n = ",n)
+            print("r = ",r)
+            print("d = ",d)
+            print("DECRYPTED MESSAGE:", decrypt(M, d, n))
+            print("*****************************************************")
+            print("*****************************************************")    
+    
+    
 # to do: 
         
-# solve congruences efficiently
 # handle M > n (or find a way around it)
+# introduce padding for encoding
