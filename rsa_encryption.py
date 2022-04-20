@@ -106,15 +106,15 @@ def getPrime(n):
             a = random.randrange(1, num)
 
             # Fermat Test
-            if pow(a, d, num) != 1:
+            if bin_exp(a, d, num) != 1:
                 return False
 
             # Check if a^2 = 1 % n has solutions +/- 1
-            if pow(a, q, num) == 1:
+            if bin_exp(a, q, num) == 1:
                 return True
             else:
                 for i in range(s):
-                    if pow(a, (2 ** i) * q, num) == -1:
+                    if bin_exp(a, (2 ** i) * q, num) == -1:
                         return True
                     else:
                         return False
