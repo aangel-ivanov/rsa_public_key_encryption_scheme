@@ -31,6 +31,7 @@ def bin_exp(x, n, m):
     modulo m using binary 
     exponentiation, assuming that
     m > x (such that x % m = x).
+    *** I replaced this with pow() ***.
     """
     if n == 1: 
         return x 
@@ -41,39 +42,74 @@ def bin_exp(x, n, m):
 
 import random
 
-def getPrime(n):
+def MillerRabin(n, t):
+    '''
+    Miller-Rabin primality test on
+    number n, n > 3, for k trials. 
+    '''
+    
+    if n % 2 == 0:
+        return False
+    
+    # Find s such that n - 1 = 2^s * r, r odd
+    d = n - 1
+    s = 0
+    while d % 2 == 0:
+        d >>= 1 # d /= 2
+        s += 1
+    d = n - 1
+    r = d // (2 ** s)
+    
+    
+    for i in range(t + 1):
+        
+        a = random.randrange(2, n - 1)
+        y = pow(a, r, n)
+        
+        if y != 1 and y != n - 1:
+            j = 1
+            while j <= s - 1 and y != n - 1:
+                y = pow(y, 2, n)
+                if y == 1:
+                    return False
+                j += 1
+            if y != n - 1:
+                return False
+    return True
+
+def getPrime(k):
     """
-    Generate n-bit prime.
+    Generate k-bit prime.
     """
     random.seed(random.randint(0, 1000))
 
-    def primeSieve(n):
+    def primeSieve(B):
         """
         Generate a list of primes
-        less than or equal to n.
+        less than or equal to B.
         """
-        isPrime = [True for i in range(n + 1)]
+        isPrime = [True for i in range(B + 1)]
         p = 2
-        while n >= p * p:
+        while B >= p * p:
             if isPrime[p] == True:
-                for i in range(p * p, n + 1, p):
+                for i in range(p * p, B + 1, p):
                     isPrime[i] = False
             p += 1
 
         primes = []
-        for p in range(2, n + 1):
+        for p in range(2, B + 1):
             if isPrime[p]:
                 primes.append(p)
                 
         return primes
 
-    def getLowLevelPrime(n):
+    def getPrimeCandidate(k):
         '''
         Generate a number divisible
         by all elements in prime list.
         '''
         while True:
-            num = random.randrange(2 ** (n - 1) + 1, 2 ** n - 1)
+            num = random.randrange(2 ** (k - 1) + 1, 2 ** k - 1)
 
             for prime in primeSieve(350):
                 if num % prime == 0 and prime ** 2 <= num:
@@ -81,83 +117,72 @@ def getPrime(n):
                 else:
                     return num
 
-    def isProbPrime(num, k):
-        '''
-        Miller-Rabin primality test on
-        number num for k trials.
-        '''
-
-        # Find s such that num - 1 = 2^s * q, q odd
-        d = num - 1
-        s = 0
-        while d % 2 == 0:
-            d >>= 1 # d/= 2
-            s += 1
-        d = num - 1
-        q = d // (2 ** s)
-
-        def MRtrial(num):
-            """
-            Perform one trial of
-            Miller-Rabin test.
-            """
-
-            # Pick test value
-            a = random.randrange(1, num)
-
-            # Fermat Test
-            if bin_exp(a, d, num) != 1:
-                return False
-
-            # Check if a^2 = 1 % n has solutions +/- 1
-            if bin_exp(a, q, num) == 1:
-                return True
-            else:
-                for i in range(s):
-                    if bin_exp(a, (2 ** i) * q, num) == -1:
-                        return True
-                    else:
-                        return False
-
-        # Iterate for number of trials
-        for i in range(k):
-            if not MRtrial(num):
-                return False
-            else:
-                return True
-
     # Get probable prime   
     if __name__ == '__main__':
     	while True:
-         pc = getLowLevelPrime(n) # store the prime candidate
-         if not isProbPrime(pc, 20):
+         pc = getPrimeCandidate(k) # store the prime candidate
+         if not MillerRabin(pc, 20):
              continue
          else:
              return pc
              break
+         
+            
+def getStrongPrime():
+    """
+    If desired, generate strong prime by Gordon's algorithm.
+    (of approximately same bitlength as getPrime()).
+    """
+    s = getPrime(512)
+    t = getPrime(512)
+    
+    i_0 = random.randint(1, 10)
+    i = i_0
+    r = 2 * i * t + 1
+    while not MillerRabin(r, 10):
+        i += 1
+        r = 2 * i * t + 1
+        
+    p_0 = 2 * pow(s, r - 2, r) * s - 1
+    
+    j_0 = random.randint(1, 10)
+    j = j_0
+    p = p_0 + 2 * j * r * s
+    while not MillerRabin(p, 10):
+        j += 1
+        p = p_0 + 2 * j * r * s
+    
+    return p
 
 p = getPrime(1024)
 q = getPrime(1024)
 
+# p = getStrongPrime()
+# q = getStrongPrime()
+
 while q == p:
     q = getPrime(1024)
+    # q = getStrongPrime()
 
-n = p * q
-r = (p - 1) * (q - 1)
+
+n = p * q # Modulus for keys
+r = (p - 1) * (q - 1) # Euler's Totient
 
 def generate_e():
-    e = random.randint(0, r)
+    """
+    Generate the public key.
+    """
+    e = random.randint(2, r)
     while gcd(e, r) != 1:  
-        e = random.randint(0, r)
+        e = random.randint(2, r)
     return e
-e = generate_e()
+e = generate_e() # Public key
 
-##### Solve the congruence: e * d = 1 (mod r), 1 < d < r
+# Solve the congruence: e * d = 1 (mod r), 1 < d < r
 # by considering the Linear Diophantine Equation: 
-# r * x + e * d = 1 ######
+# r * x + e * d = 1
 
-# Apply Extended Euclidean Algorithm:
-d = eea(r, e)[2]
+d = eea(r, e)[2] # Private key
 
 # Enforce the inequality:   
 if d <= 0:
@@ -165,29 +190,43 @@ if d <= 0:
         d += r
 else:
     while not d < r:
-        d -= r
+        d -= r   
+
+public_key = [e, n]
+private_key = [d, n]
 
 
-def encrypt(M, e, n):
+import string
+
+# TODO: add support for numbers
+
+def encode(pt):
     """
-    Convert each letter in plaintext to numerical digits
-    and encyrpt using public key.
+    Encode plaintext pt into
+    numerical digits.
     """
-    return [bin_exp(ord(char), e, n) for char in M]
+    dic = string.ascii_letters + string.punctuation + " "
+    M = []
+    for i in pt:
+        M.append(dic.index(i))
+    return M
 
+# Encrypt and decrypt character by character 
+# to satisfy RSA requirnment n > M 
 
-def decrypt(C, d, n):
-    """
-    Decrypt ciphertext using private key 
-    and convert to plaintext.
-    """
-    split_C = [C[i:i+2] for i in range(0, len(C), 2)]
-    # print(split_C)
-    #for i in split_C:
-        # print(i)
-    return ''.join([chr(bin_exp(int(i), d, n)) for i in split_C])
+def encrypt(M, public_key):
+    return [pow(i, public_key[0], public_key[1]) for i in M]
 
+def decrypt(CT, private_key):
+    CT = [char for char in CT]
+    return [pow(i, private_key[0], private_key[1]) for i in CT]
 
+def decode(DT):
+    dic = string.ascii_letters + string.punctuation + " "
+    msg = ''
+    for i in DT:
+        msg += dic[i]
+    return msg
 
 if __name__ == '__main__':
     '''
@@ -203,23 +242,19 @@ if __name__ == '__main__':
         choose = input("Type '1' for encryption and '2' for decrytion: ")
         
         if choose == '1':
+            M = encode(M)
+            C = encrypt(M, public_key)
             print("*****************************************************")
-            print("n =",n)
-            print("ENCRYPTED MESSAGE:", 
-                  ''.join(map(lambda x: str(x), encrypt(M, e, n))))
+            # print("n =",n)
+            print("ENCRYPTED MESSAGE:", ''.join([str(i) for i in C]))
             print("*****************************************************")
             
         elif choose == '2':
+            R = decrypt(C, private_key)
             print("*****************************************************")
-            print("n = ",n)
-            print("r = ",r)
-            print("d = ",d)
-            print("DECRYPTED MESSAGE:", decrypt(M, d, n))
+            # print("n = ",n)
+            # print("r = ",r)
+            # print("d = ",d)
+            print("DECRYPTED MESSAGE:", decode(R))
             print("*****************************************************")
-            print("*****************************************************")    
-    
-    
-# to do: 
-        
-# handle M > n (or find a way around it)
-# introduce padding for encoding
+            print("*****************************************************")   
