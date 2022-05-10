@@ -194,11 +194,7 @@ def generateKeys():
         while not d < r:
             d -= r   
     
-    public_key = e
-    private_key = d
-    modulus = n
-    
-    return public_key, private_key, modulus
+    return e, d, n
 
 
 import string
