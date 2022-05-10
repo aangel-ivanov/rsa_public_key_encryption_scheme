@@ -154,46 +154,51 @@ def getStrongPrime():
     
     return p
 
-p = getPrime(1024)
-q = getPrime(1024)
-
-# p = getStrongPrime()
-# q = getStrongPrime()
-
-while q == p:
+def generateKeys():
+    
+    p = getPrime(1024)
     q = getPrime(1024)
+    
+    # p = getStrongPrime()
     # q = getStrongPrime()
-
-
-n = p * q # Modulus for keys
-r = (p - 1) * (q - 1) # Euler's Totient
-
-def generate_e():
-    """
-    Generate the public key.
-    """
-    e = random.randint(2, r)
-    while gcd(e, r) != 1:  
+    
+    while q == p:
+        q = getPrime(1024)
+        # q = getStrongPrime()
+    
+    
+    n = p * q # Modulus for keys
+    r = (p - 1) * (q - 1) # Euler's Totient
+    
+    def generate_e():
+        """
+        Generate the public key.
+        """
         e = random.randint(2, r)
-    return e
-e = generate_e() # Public key
-
-# Solve the congruence: e * d = 1 (mod r), 1 < d < r
-# by considering the Linear Diophantine Equation: 
-# r * x + e * d = 1
-
-d = eea(r, e)[2] # Private key
-
-# Enforce the inequality:   
-if d <= 0:
-    while not 1 < d:
-        d += r
-else:
-    while not d < r:
-        d -= r   
-
-public_key = [e, n]
-private_key = [d, n]
+        while gcd(e, r) != 1:  
+            e = random.randint(2, r)
+        return e
+    e = generate_e() # Public key
+    
+    # Solve the congruence: e * d = 1 (mod r), 1 < d < r
+    # by considering the Linear Diophantine Equation: 
+    # r * x + e * d = 1
+    
+    d = eea(r, e)[2] # Private key
+    
+    # Enforce the inequality:   
+    if d <= 0:
+        while not 1 < d:
+            d += r
+    else:
+        while not d < r:
+            d -= r   
+    
+    public_key = e
+    private_key = d
+    modulus = n
+    
+    return public_key, private_key, modulus
 
 
 import string
@@ -215,7 +220,7 @@ def encode(pt):
 # to satisfy RSA requirnment n > M 
 
 def encrypt(M, public_key):
-    return [pow(i, public_key[0], public_key[1]) for i in M]
+    return [pow(i, int(public_key[0]), int(public_key[1])) for i in M]
 
 def decrypt(CT, private_key):
     CT = [char for char in CT]
@@ -238,18 +243,36 @@ if __name__ == '__main__':
     print("*****************************************************")
     
     while True:
-        M = input("Enter your message: ")
-        choose = input("Type '1' for encryption and '2' for decrytion: ")
+        
+        choose = input("Type '1' to generate keys, '2' " 
+                       "for encryption and '3' for decrytion: ")
         
         if choose == '1':
+            keys = generateKeys()
+            print("public key e = ",keys[0])
+            print("private key d = ",keys[1])
+            print("modulus n = ",keys[2])
+            
+        elif choose == '2':
+            M = input("Enter your message: ")
+            e = int(input("Type your public key e: "))
+            n = int(input("Type your modulus n: "))
+            public_key = [e, n]
+            
             M = encode(M)
             C = encrypt(M, public_key)
+            print(C)
             print("*****************************************************")
-            # print("n =",n)
+            # print("n = ",n)
             print("ENCRYPTED MESSAGE:", ''.join([str(i) for i in C]))
             print("*****************************************************")
             
-        elif choose == '2':
+        elif choose == '3':
+            M = input("Enter your message: ")
+            d = int(input("Type your private key d: "))
+            n = int(input("Type your modulus n: "))
+            private_key = [d, n]
+
             R = decrypt(C, private_key)
             print("*****************************************************")
             # print("n = ",n)
